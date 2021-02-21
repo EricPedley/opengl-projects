@@ -66,6 +66,11 @@ glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
 glUseProgram(shader)
 glClearColor(0, 0.1, 0.1, 1)
 
+def framebuffer_size_callback(window,width,height):
+    glViewport(0,0,width,height)
+
+glfw.set_framebuffer_size_callback(window,framebuffer_size_callback)
+
 # the main application loop
 while not glfw.window_should_close(window):
     glfw.poll_events()
