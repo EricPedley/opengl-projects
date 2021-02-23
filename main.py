@@ -4,11 +4,12 @@ from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 from os import read
 import pyrr
+from math import sqrt
 vertex_src = """
 # version 330
 in vec3 a_position;
-in vec3 a_color;
-out vec3 v_color;
+in vec3 a_color;//attribute color
+out vec3 v_color;//varying color
 
 uniform mat4 rotation;
 
@@ -47,10 +48,10 @@ glfw.set_window_pos(window, 400, 200)
 # make the context current
 glfw.make_context_current(window)
 
-vertices = [-0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
-             0.5, 0.0, -0.5, 0.0, 1.0, 0.0,
-             0.5,  0.0, 0.5, 0.0, 0.0, 1.0,
-             0.0, 0.5, 0.0, 1.0, 0.5, 0.0]
+vertices = [sqrt(8/9), -1/3, 0.0, 1.0, 0.0, 0.0,
+             -sqrt(2/9), -1/3, -sqrt(2/3), 0.0, 1.0, 0.0,
+             -sqrt(2/9),  -1/3, sqrt(2/3), 0.0, 0.0, 1.0,
+             0.0, 1.0, 0.0, 1.0, 0.5, 0.0]
 
 vertices = np.array(vertices, dtype=np.float32)
 
@@ -79,11 +80,11 @@ glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.nbytes,indices,GL_STATIC_DRAW)
 
 position = glGetAttribLocation(shader, "a_position")#gets the integer position of the a_position variable from the shader, which we could've set with "layout (location=0) in vec3 a_position"
 glEnableVertexAttribArray(position)
-glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))#starts at 0 and stride is 24 bytes, so it skips over the color info that follows each vertex
+glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, vertices.itemsize*6, ctypes.c_void_p(0))#starts at 0 and stride is 24 bytes, so it skips over the color info that follows each vertex
 
 color = glGetAttribLocation(shader, "a_color")#integer location of a_color variable in the shader.
 glEnableVertexAttribArray(color)
-glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))#starts at 12 abd strude us 24, so it starts at the color and skips the vertex info
+glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, vertices.itemsize*6, ctypes.c_void_p(12))#starts at 12 abd strude us 24, so it starts at the color and skips the vertex info
 
 glUseProgram(shader)
 glClearColor(0, 0.1, 0.1, 1)#sets clear color
@@ -102,7 +103,7 @@ while not glfw.window_should_close(window):
     process_input(window)
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
-    rot_matrix = pyrr.Matrix44.from_x_rotation(glfw.get_time())#np.array([0,1,0,0.5*glfw.get_time()],dtype=np.float32)
+    rot_matrix = pyrr.Matrix44.from_y_rotation(glfw.get_time())#np.array([0,1,0,0.5*glfw.get_time()],dtype=np.float32)
     #print(rot_matrix)
     glUniformMatrix4fv(rot_location,1,GL_FALSE,rot_matrix)
     #glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO)
