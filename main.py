@@ -3,15 +3,18 @@ from OpenGL.GL import *
 from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 from os import read
-
+import pyrr
 vertex_src = """
 # version 330
 in vec3 a_position;
 in vec3 a_color;
 out vec3 v_color;
+
+uniform mat4 rotation;
+
 void main()
 {
-    gl_Position = vec4(a_position, 1.0);
+    gl_Position = rotation*vec4(a_position, 1.0);
     v_color = a_color;
 }
 """
@@ -44,12 +47,10 @@ glfw.set_window_pos(window, 400, 200)
 # make the context current
 glfw.make_context_current(window)
 
-vertices = [0.0, -0.5, 0.0, 1.0, 0.0, 0.0,
-             0.5, 0.0, 0.0, 0.0, 1.0, 0.0,
-             0.0,  0.5, 0.0, 0.0, 0.0, 1.0,
-             -0.5, 0.0, 0.0, 1.0, 0.5, 0.0,
-             0.0, -0.5, 0.0, 0.0, 1.0, 0.0,
-             0.0,  0.5, 0.0, 0.0, 0.0, 1.0]
+vertices = [-0.5, 0.0, 0.0, 1.0, 0.0, 0.0,
+             0.5, 0.0, -0.5, 0.0, 1.0, 0.0,
+             0.5,  0.0, 0.5, 0.0, 0.0, 1.0,
+             0.0, 0.5, 0.0, 1.0, 0.5, 0.0]
 
 vertices = np.array(vertices, dtype=np.float32)
 
@@ -59,17 +60,19 @@ vertices = np.array(vertices, dtype=np.float32)
 # compileShader(vertex_src)
 shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER), compileShader(fragment_src, GL_FRAGMENT_SHADER))
 
-VAO = glGenVertexArrays(1)
-glBindVertexArray(VAO)
+#don't need this in python for some reason?
+# VAO = glGenVertexArrays(1)
+# glBindVertexArray(VAO)
 
 VBO = glGenBuffers(1)#VBO stands for "vertex buffer object", and this is just the integer ID of that object
 glBindBuffer(GL_ARRAY_BUFFER, VBO)#binds the GL_ARRAY_BUFFER to the buffer we just made, so now referencing GL_ARRAY_BUFFER means referencing the vbo object we made
 glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)#puts the vertex data into the buffer we created
 
 indices = [0,1,2,
-        4,5,6]
+        3,0,2,
+        0,3,1,
+        1,2,3]
 indices = np.array(indices,dtype=np.uint32)
-
 EBO = glGenBuffers(1)
 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO)
 glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.nbytes,indices,GL_STATIC_DRAW)
@@ -84,7 +87,7 @@ glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))#sta
 
 glUseProgram(shader)
 glClearColor(0, 0.1, 0.1, 1)#sets clear color
-
+glEnable(GL_DEPTH_TEST)
 def framebuffer_size_callback(window,width,height):
     glViewport(0,0,width,height)
 
@@ -93,15 +96,18 @@ def process_input(window):
         glfw.set_window_should_close(window,True)
 
 glfw.set_framebuffer_size_callback(window,framebuffer_size_callback)
-
+rot_location = glGetUniformLocation(shader,"rotation")
 # the main application loop
 while not glfw.window_should_close(window):
     process_input(window)
-    glClear(GL_COLOR_BUFFER_BIT)
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
 
+    rot_matrix = pyrr.Matrix44.from_x_rotation(glfw.get_time())#np.array([0,1,0,0.5*glfw.get_time()],dtype=np.float32)
+    #print(rot_matrix)
+    glUniformMatrix4fv(rot_location,1,GL_FALSE,rot_matrix)
     #glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO)
-    glDrawArrays(GL_TRIANGLES, 0,6)
-    #glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0)#gets stuck on this line
+    #glDrawArrays(GL_TRIANGLES, 0,6)
+    glDrawElements(GL_TRIANGLES,len(indices),GL_UNSIGNED_INT,ctypes.c_void_p(0))#this was the big error causing white screen of death in the program. The last argument should be None, not 0. The problem was that I just translated the parameters straight from the book, where the code is in C++
 
     glfw.poll_events()
     glfw.swap_buffers(window)
