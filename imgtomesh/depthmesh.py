@@ -140,7 +140,8 @@ class GLFWDrawer:
         glfw.swap_buffers(self.window)
 
 #creates array of vertices where each vertex's x and y coordinates are its x and y coordinates on the image and its z coordinate is its depth
-def createVertexArray(depthmap,mode):
+#mode can be "texture" or "colormap"
+def createVertexArray(depthmap,mode="colormap"):
     vertices = np.zeros(shape=(depthmap.size*5),dtype=np.float32)
     counter=0
     height = depthmap.shape[0]
@@ -165,7 +166,7 @@ def createVertexArray(depthmap,mode):
     return vertices
 
 #generates numpy indices array that connects each vertex to all its surrounding vertices to create a mesh
-def createMeshIndices(width,height):
+def createMeshIndices(height,width):
     indices = np.empty(shape=((width-1)*(height-1)*6),dtype=np.uint32)
     counter=0
     for row in range(0,height-1):
