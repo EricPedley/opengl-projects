@@ -6,7 +6,7 @@ import pyrr
 from math import sqrt,pi
 from PIL import Image
 
-class glfwDrawer:
+class GLFWDrawer:
     def __init__(self,x=400,y=200,width=1280,height=720):
         # initializing glfw library
         if not glfw.init():
@@ -78,7 +78,9 @@ class glfwDrawer:
         # the main application loop
         self.rot_y_scalar = pi
         self.rot_x_scalar = pi
-
+    def __del__(self):        
+        # terminate glfw, free up allocated resources
+        glfw.terminate()
 
     #options for writing to buffers
     # GL_STREAM_DRAW: the data is set only once and used by the GPU at most a few times.
@@ -137,15 +139,6 @@ class glfwDrawer:
         glfw.poll_events()
         glfw.swap_buffers(self.window)
 
-
-with open("pred.npy","rb") as file:
-    #the file still has the extra dimensions from the prediction model
-    depthmap = np.load(file)[0,:,:,0]
-
-mode = "colormap"
-height = depthmap.shape[0]
-width = depthmap.shape[1]
-
 #creates array of vertices where each vertex's x and y coordinates are its x and y coordinates on the image and its z coordinate is its depth
 def createVertexArray(depthmap,mode):
     vertices = np.zeros(shape=(depthmap.size*5),dtype=np.float32)
@@ -171,8 +164,6 @@ def createVertexArray(depthmap,mode):
             counter+=1
     return vertices
 
-vertices = createVertexArray(depthmap,mode)
-
 #generates numpy indices array that connects each vertex to all its surrounding vertices to create a mesh
 def createMeshIndices(width,height):
     indices = np.empty(shape=((width-1)*(height-1)*6),dtype=np.uint32)
@@ -189,24 +180,39 @@ def createMeshIndices(width,height):
             counter+=6
     return indices
 
-indices = createMeshIndices(width,height)
+def main():
+    with open("testingdata.npy","rb") as file:
+        #the file still has the extra dimensions from the prediction model
+        depthmap = np.load(file)[0,:,:,0]
+
+    mode = "colormap"
+    height = depthmap.shape[0]
+    width = depthmap.shape[1]
+
+
+    vertices = createVertexArray(depthmap,mode)
+
+    indices = createMeshIndices(width,height)
 
 
 
 
 
-# load image
-if mode=="colormap":
-    image = Image.open("viridis colormap.png")#503x19
-elif mode=="texture":
-    image = Image.open("testimg.jpg")
-    image.resize((width,height))
-glObj = glfwDrawer()
-glObj.set_vertices(vertices)
-glObj.set_indices(indices)
-glObj.set_img(image)
+    # load image
+    if mode=="colormap":
+        image = Image.open("viridis colormap.png")#503x19
+    elif mode=="texture":
+        image = Image.open("testimg.jpg")
+        image.resize((width,height))
+    glObj = glfwDrawer()
+    glObj.set_vertices(vertices)
+    glObj.set_indices(indices)
+    glObj.set_img(image)
 
-while not glObj.should_close():
-    glObj.draw()
-# terminate glfw, free up allocated resources
-glfw.terminate()
+    while not glObj.should_close():
+        glObj.draw()
+
+    del glObj
+
+if __name__=="__main__":
+    main()
