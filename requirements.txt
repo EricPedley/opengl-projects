@@ -1,0 +1,6 @@
+pyopengl
+glfw
+numpy
+pillow
+matplotlib
+tensorflow
