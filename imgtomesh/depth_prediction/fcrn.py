@@ -1,4 +1,4 @@
-from network import Network
+from depth_prediction.network import Network
 
 class ResNet50UpProj(Network):
     def setup(self):
