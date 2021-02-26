@@ -55,6 +55,11 @@ vertices = [sqrt(8/9), -1/3, 0.0, 1.0, 0.0, 0.0,
 
 vertices = np.array(vertices, dtype=np.float32)
 
+indices = [0,1,2,
+        3,0,2,
+        0,3,1,
+        1,2,3]
+indices = np.array(indices,dtype=np.uint32)
 
 # vertexShader = glCreateShader(GL_VERTEX_SHADER)
 # vertexShader = glShaderSource(vertexShader,1,vertex_src)
@@ -69,11 +74,6 @@ VBO = glGenBuffers(1)#VBO stands for "vertex buffer object", and this is just th
 glBindBuffer(GL_ARRAY_BUFFER, VBO)#binds the GL_ARRAY_BUFFER to the buffer we just made, so now referencing GL_ARRAY_BUFFER means referencing the vbo object we made
 glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)#puts the vertex data into the buffer we created
 
-indices = [0,1,2,
-        3,0,2,
-        0,3,1,
-        1,2,3]
-indices = np.array(indices,dtype=np.uint32)
 EBO = glGenBuffers(1)
 glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,EBO)
 glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.nbytes,indices,GL_STATIC_DRAW)
