@@ -1,6 +1,7 @@
 # created by virtualenv automatically
 Lib
 Scripts
+bin
 pyvenv.cfg
 NYU_FCRN-checkpoint
 __pycache__

@@ -4,9 +4,8 @@ from OpenGL.GL.shaders import compileProgram, compileShader
 import numpy as np
 import pyrr
 from PIL import Image
-
 vertex_src = """
-# version 330
+# version 330 core
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec2 a_texture;
 uniform mat4 rotation;
@@ -22,7 +21,7 @@ void main()
 """
 
 fragment_src = """
-# version 330
+# version 330 core
 in vec2 v_texture;
 out vec4 out_color;
 uniform sampler2D s_texture;
@@ -39,7 +38,10 @@ def window_resize(window, width, height):
 # initializing glfw library
 if not glfw.init():
     raise Exception("glfw can not be initialized!")
-
+glfw.window_hint(glfw.CONTEXT_VERSION_MAJOR, 3)
+glfw.window_hint(glfw.CONTEXT_VERSION_MINOR, 3)
+glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, GL_TRUE)
+glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 # creating the window
 window = glfw.create_window(1280, 720, "My OpenGL window", None, None)
 
@@ -90,7 +92,16 @@ indices = [0, 1, 2, 3,2,1,
 vertices = np.array(vertices, dtype=np.float32)
 indices = np.array(indices, dtype=np.uint32)
 
-shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER), compileShader(fragment_src, GL_FRAGMENT_SHADER))
+print(glGetString(GL_VERSION))
+#vertex array object needs to be bound before shader compilation
+VAO = glGenVertexArrays(1)
+glBindVertexArray(VAO)
+try:
+    shader = compileProgram(compileShader(vertex_src, GL_VERTEX_SHADER), compileShader(fragment_src, GL_FRAGMENT_SHADER))
+except Exception as e:
+    print("caught error?")
+    print(str(e).encode().decode('unicode_escape'))
+    exit(1)
 
 # Vertex Buffer Object
 VBO = glGenBuffers(1)
