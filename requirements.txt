@@ -1,6 +1,7 @@
 pyopengl
 glfw
 numpy
+pyrr
 pillow
 matplotlib
 tensorflow
