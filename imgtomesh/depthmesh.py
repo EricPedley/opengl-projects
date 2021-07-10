@@ -5,9 +5,10 @@ import numpy as np
 import pyrr
 from math import sqrt,pi
 from PIL import Image
-
+import cv2
 class GLFWDrawer:
-    def __init__(self,x=400,y=200,width=1280,height=720):
+    #mode can be "static", "stream", or "dynamic"
+    def __init__(self,mode="static",x=400,y=200,width=1280,height=720):
         # initializing glfw library
         if not glfw.init():
             raise Exception("glfw can not be initialized!")
@@ -20,6 +21,7 @@ class GLFWDrawer:
             glfw.terminate()
             raise Exception("glfw window can not be created!")
         self.window=window
+        self.mode=mode
         # set window's position
         glfw.set_window_pos(window, x, y)
 
@@ -89,7 +91,13 @@ class GLFWDrawer:
 
     #vertices array expects each vertex to be 5 values: x,y,z,texture x, and texture y, and the array should be 1-dimensional
     def set_vertices(self,vertices):
-        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)#puts the vertex data into the buffer we created
+        if self.mode=="static":
+            mode=GL_STATIC_DRAW
+        elif self.mode=="dynamic":
+            mode=GL_DYNAMIC_DRAW
+        elif self.mode=="stream":
+            mode=GL_STREAM_DRAW
+        glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, mode)#puts the vertex data into the buffer we created
         glEnableVertexAttribArray(0)#the position is zero because I did layout(location = 0) in the shader source code
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertices.itemsize*5, ctypes.c_void_p(0))#starts at 0 and stride is 24 bytes, so it skips over the color info that follows each vertex
         glEnableVertexAttribArray(1)
@@ -97,14 +105,27 @@ class GLFWDrawer:
     
     
     def set_indices(self,indices):
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.nbytes,indices,GL_STATIC_DRAW)
+        if self.mode=="static":
+            mode=GL_STATIC_DRAW
+        elif self.mode=="dynamic":
+            mode=GL_DYNAMIC_DRAW
+        elif self.mode=="stream":
+            mode=GL_STREAM_DRAW
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.nbytes,indices,mode)
         self.indices=indices
 
     def set_img(self,image):
         #image = image.transpose(Image.FLIP_TOP_BOTTOM)
-        img_data = image.convert("RGBA").tobytes()
+        if str(type(image)).find("PIL")>-1:#hacky PIL datatype solution
+            img_data = image.convert("RGBA").tobytes()
+            imW = image.width
+            imH = image.height
+        else:
+            img_data=cv2.cvtColor(image,cv2.COLOR_RGB2RGBA).tobytes()
+            imW = image.shape[1]
+            imH = image.shape[0]
         # img_data = np.array(image.getdata(), np.uint8) # second way of getting the raw image data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width, image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imW, imH, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data)
     
 
     
@@ -112,6 +133,7 @@ class GLFWDrawer:
         return glfw.window_should_close(self.window)
 
     def draw(self):
+        switch_modes=False
         def process_input(window):
             if glfw.get_key(window,glfw.KEY_ESCAPE) == glfw.PRESS:
                 glfw.set_window_should_close(window,True)
@@ -123,6 +145,8 @@ class GLFWDrawer:
                 self.rot_x_scalar-=pi/24
             if glfw.get_key(window,glfw.KEY_S) == glfw.PRESS:
                 self.rot_x_scalar+=pi/24
+            if glfw.get_key(window,glfw.KEY_E) == glfw.PRESS:
+                switch_modes=True
             glfw.set_framebuffer_size_callback(window,self.framebuffer_size_callback)
         process_input(self.window)
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
@@ -138,6 +162,7 @@ class GLFWDrawer:
 
         glfw.poll_events()
         glfw.swap_buffers(self.window)
+        return switch_modes
 
 #creates array of vertices where each vertex's x and y coordinates are its x and y coordinates on the image and its z coordinate is its depth
 #mode can be "texture" or "colormap"

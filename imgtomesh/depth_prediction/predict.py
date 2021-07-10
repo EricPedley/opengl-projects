@@ -9,7 +9,7 @@ from PIL import Image
 
 import depth_prediction.fcrn as models
 tf.disable_v2_behavior()
-
+import cv2
 class DepthMapGenerator:
 
     #no args
@@ -39,9 +39,20 @@ class DepthMapGenerator:
     #img should be PIL image object
     def getPrediction(self,img):
         # Evalute the network for the given image
-        img = img.resize([self.inputWidth,self.inputHeight], Image.ANTIALIAS)
+        if str(type(img)).find("PIL")>-1:#this is hacky idk what to do cause each filetype reads as a different datatype in PIL
+            img = img.resize([self.inputWidth,self.inputHeight], Image.ANTIALIAS)
+            #img = np.array(img).astype('float32')
+            #img = np.expand_dims(np.asarray(img), axis = 0)
+        elif type(img)==np.ndarray:
+            img = np.resize(img,(self.inputHeight,self.inputWidth,3))
+        else:
+            raise ValueError("Unsupported image datatype, supported types are PIL images and numpy.ndarray")
+        
         img = np.array(img).astype('float32')
-        img = np.expand_dims(np.asarray(img), axis = 0)
+        #cv2.imshow("image 2",img)
+        img = np.expand_dims(img, axis = 0)
+        #print(img)
+        #broken right now for images taken from opencv webcam capture
         pred = self.sess.run(self.net.get_output(), feed_dict={self.input_node: img})
         return pred[0,:,:,0]
 
